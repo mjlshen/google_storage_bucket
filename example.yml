@@ -1,0 +1,11 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "Ensure bucket exists"
+      google_storage_bucket:
+        name: "{{ gcp_bucket_name }}"
+        project: "{{ gcp_project }}"
+        storage_class: "STANDARD"
+        location: "us-central1"
+        state: absent
+      register: test
