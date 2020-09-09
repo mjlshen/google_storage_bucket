@@ -1,11 +1,12 @@
-namespace: mjlshen
-name: google_storage_bucket
-version: 0.1.0
 authors:
   - mjlshen (https://github.com/mjlshen)
 description: Collection of a custom google storage bucket module
+license: LICENSE
+name: google_storage_bucket
+namespace: mjlshen
 readme: README.md
 repository: https://github.com/mjlshen/google_storage_bucket
 tags:
   - cloud
   - google
+version: 0.1.0
