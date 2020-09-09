@@ -1,5 +1,8 @@
 authors:
   - mjlshen (https://github.com/mjlshen)
+build_ignore:
+  - .vscode
+dependencies: {}
 description: Collection of a custom google storage bucket module
 license_file: LICENSE
 name: google_storage_bucket
@@ -9,4 +12,4 @@ repository: https://github.com/mjlshen/google_storage_bucket
 tags:
   - cloud
   - google
-version: 0.1.0
+version: 0.1.2

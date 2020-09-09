@@ -2,7 +2,7 @@
   gather_facts: false
   tasks:
     - name: "Ensure bucket exists"
-      google_storage_bucket:
+      mjlshen.google_storage_bucket.google_storage_bucket:
         name: "{{ gcp_bucket_name }}"
         project: "{{ gcp_project }}"
         storage_class: "STANDARD"

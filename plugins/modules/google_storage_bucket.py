@@ -228,7 +228,7 @@ def deleteBucket(params, result):
         else:
             try:
                 bucket.delete()
-                result['state'] = 'absent'                
+                result['state'] = 'absent'
             except Conflict:
                 result['state'] = 'present'
                 return False, "Object conflict: Bucket %s is not empty. Use force: true to override" % params['name'], result
@@ -277,7 +277,7 @@ def run_module():
         argument_spec=argument_spec,
         supports_check_mode=True
     )
-    
+
     stateMachine = {
         "present": bucketPresent,
         "absent": bucketAbsent
