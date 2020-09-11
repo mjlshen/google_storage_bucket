@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 # Copyright: (c) 2020, Michael Shen <mishen@umich.edu>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+
+# (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -120,18 +121,19 @@ from google.cloud import storage
 from google.api_core.exceptions import NotFound
 from google.api_core.exceptions import Conflict
 
-# returns:
-#   True/False changed
-#   error message
-#   result
+
+# If state: present, this function will be called, returning:
+# 1) True if the state of the bucket has changed, else False
+# 2) Any error message, if present
+# 3) The resulting parameters of the bucket
 def bucketPresent(params, check=False):
     result = getBucket(params)
     if result['state'] == 'present':
         if check:
-            return False, '', result
+            return (params['storage_class'] != result['storage_class']), '', result
         else:
             if params['storage_class'] != result['storage_class']:
-                return updateBucket(params, result)
+                return updateBucketStorageClass(params, result)
             else:
                 return False, '', result
     else:
@@ -146,6 +148,11 @@ def bucketPresent(params, check=False):
         else:
             return createBucket(params, result)
 
+
+# If state: absent, this function will be called, returning:
+# 1) True if the state of the bucket has changed, else False
+# 2) Any error message, if present
+# 3) The resulting parameters of the bucket
 def bucketAbsent(params, check=False):
     result = getBucket(params)
     if result['state'] == 'absent':
@@ -165,8 +172,7 @@ def bucketAbsent(params, check=False):
         else:
             return deleteBucket(params, result)
 
-# getBucket checks to see if a given bucket exists or not, filling in the
-# result dictionary with as much relevant information as it can find.
+
 def getBucket(params):
     result = {
         "name": '',
@@ -186,8 +192,9 @@ def getBucket(params):
         result['state'] = 'absent'
     return result
 
+
 def createBucket(params, result):
-    if not 'project' in params:
+    if 'project' not in params:
         return False, "project not defined, required when creating buckets", result
 
     storage_client = storage.Client(project=params['project'])
@@ -203,8 +210,9 @@ def createBucket(params, result):
         return False, "Naming conflict: Bucket %s exists elsewhere." % params['name'], result
     return True, '', result
 
+
 def updateBucketStorageClass(params, result):
-    if not 'project' in params:
+    if 'project' not in params:
         return False, "project not defined, required when creating buckets", result
 
     storage_client = storage.Client(project=params['project'])
@@ -217,6 +225,7 @@ def updateBucketStorageClass(params, result):
         return True, '', result
     else:
         return False, '', result
+
 
 def deleteBucket(params, result):
     storage_client = storage.Client()
@@ -236,6 +245,7 @@ def deleteBucket(params, result):
         result['state'] = 'absent'
         return False, '', result
     return True, '', result
+
 
 def run_module():
     argument_spec = {
@@ -289,8 +299,10 @@ def run_module():
     else:
         module.exit_json(changed=changedState, **result)
 
+
 def main():
     run_module()
+
 
 if __name__ == '__main__':
     main()
