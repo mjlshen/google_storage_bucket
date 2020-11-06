@@ -59,6 +59,13 @@ options:
         default: us
         type: str
         required: false
+    versioning_enabled:
+        description:
+            - Object Versioning retains a noncurrent object version when the live object version gets replaced or deleted.
+            - See https://cloud.google.com/storage/docs/object-versioning for official documentation.
+        default: false
+        type: bool
+        required: false
     force:
         description:
             - When true, destroy a bucket even if there are objects in it.
@@ -114,6 +121,10 @@ location:
     description: The geographic location of the bucket.
     type: str
     returned: always
+versioning_enabled:
+    description: Object Versioning retains a noncurrent object version when the live object version gets replaced or deleted. https://cloud.google.com/storage/docs/object-versioning
+    type: bool
+    returned: always
 '''
 
 from ansible.module_utils.basic import AnsibleModule
@@ -130,19 +141,20 @@ def bucketPresent(params, check=False):
     result = getBucket(params)
     if result['state'] == 'present':
         if check:
-            return (params['storage_class'] != result['storage_class']), '', result
+            return (params['storage_class'] != result['storage_class']) and (params['versioning_enabled'] != result['versioning_enabled']), '', result
         else:
-            if params['storage_class'] != result['storage_class']:
-                return updateBucketStorageClass(params, result)
-            else:
+            if (result['storage_class'] == params['storage_class'] and result['versioning_enabled'] == params['versioning_enabled']):
                 return False, '', result
+            else:
+                return updateBucket(params, result)
     else:
         if check:
             result = {
                 "name": params['name'],
                 "state": params['state'],
                 "storage_class": params['storage_class'],
-                "location": params['location']
+                "location": params['location'],
+                "versioning_enabled": params['versioning_enabled']
             }
             return True, '', result
         else:
@@ -166,7 +178,8 @@ def bucketAbsent(params, check=False):
                 "name": params['name'],
                 "state": params['state'],
                 "storage_class": params['storage_class'],
-                "location": params['location']
+                "location": params['location'],
+                "versioning_enabled": params['versioning_enabled']
             }
             return True, '', result
         else:
@@ -187,6 +200,7 @@ def getBucket(params):
         bucket = storage_client.get_bucket(params['name'])
         result['state'] = 'present'
         result['storage_class'] = bucket.storage_class
+        result['versioning_enabled'] = bucket.versioning_enabled
         result['location'] = bucket.location
     except NotFound:
         result['state'] = 'absent'
@@ -202,6 +216,7 @@ def createBucket(params, result):
     try:
         bucket = storage_client.bucket(params['name'])
         bucket.storage_class = params['storage_class']
+        bucket.versioning_enabled = params['versioning_enabled']
         bucket.create(location=params['location'])
         result['state'] = 'present'
         result['storage_class'] = bucket.storage_class
@@ -211,20 +226,25 @@ def createBucket(params, result):
     return True, '', result
 
 
-def updateBucketStorageClass(params, result):
+def updateBucket(params, result):
     if 'project' not in params:
         return False, "project not defined, required when creating buckets", result
 
     storage_client = storage.Client(project=params['project'])
 
     bucket = storage_client.bucket(params['name'])
+    if (bucket.storage_class == params['storage_class'] and bucket.versioning_enabled == params['versioning_enabled']):
+        return False, '', result
     if bucket.storage_class != params['storage_class']:
         bucket.storage_class = params['storage_class']
         bucket.update()
-        result['storage_class'] = bucket.storage_class
-        return True, '', result
-    else:
-        return False, '', result
+    if bucket.versioning_enabled != params['versioning_enabled']:
+        bucket.versioning_enabled = params['versioning_enabled']
+        bucket.patch()
+
+    result['storage_class'] = bucket.storage_class
+    result['versioning_enabled'] = bucket.versioning_enabled
+    return True, '', result
 
 
 def deleteBucket(params, result):
@@ -275,6 +295,11 @@ def run_module():
             "required": False,
             "type": 'str',
             "default": 'us'
+        },
+        "versioning_enabled": {
+            "required": False,
+            "type": 'bool',
+            "default": False
         },
         "force": {
             "required": False,

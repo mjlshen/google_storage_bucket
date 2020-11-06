@@ -7,5 +7,6 @@
         project: "{{ gcp_project }}"
         storage_class: "STANDARD"
         location: "us-central1"
+        versioning_enabled: true
         state: absent
       register: test
