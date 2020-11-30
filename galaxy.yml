@@ -12,4 +12,4 @@ repository: https://github.com/mjlshen/google_storage_bucket
 tags:
   - cloud
   - google
-version: 0.1.4
+version: 0.1.5

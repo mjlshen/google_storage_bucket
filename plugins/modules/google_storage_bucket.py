@@ -66,6 +66,12 @@ options:
         default: false
         type: bool
         required: false
+    labels:
+        description:
+            - Dictionary of key: value pairs to set as labels on this bucket
+        default: {}
+        type: dict
+        required: false
     force:
         description:
             - When true, destroy a bucket even if there are objects in it.
@@ -141,9 +147,13 @@ def bucketPresent(params, check=False):
     result = getBucket(params)
     if result['state'] == 'present':
         if check:
-            return (params['storage_class'] != result['storage_class']) and (params['versioning_enabled'] != result['versioning_enabled']), '', result
+            return (params['storage_class'] != result['storage_class']) and \
+                   (params['versioning_enabled'] != result['versioning_enabled']) and \
+                   (params['labels'] != result['labels']), '', result
         else:
-            if (result['storage_class'] == params['storage_class'] and result['versioning_enabled'] == params['versioning_enabled']):
+            if (result['storage_class'] == params['storage_class'] and \
+                result['versioning_enabled'] == params['versioning_enabled'] and \
+                result['labels'] == params['labels']):
                 return False, '', result
             else:
                 return updateBucket(params, result)
@@ -154,7 +164,8 @@ def bucketPresent(params, check=False):
                 "state": params['state'],
                 "storage_class": params['storage_class'],
                 "location": params['location'],
-                "versioning_enabled": params['versioning_enabled']
+                "versioning_enabled": params['versioning_enabled'],
+                "labels": params['labels']
             }
             return True, '', result
         else:
@@ -179,7 +190,8 @@ def bucketAbsent(params, check=False):
                 "state": params['state'],
                 "storage_class": params['storage_class'],
                 "location": params['location'],
-                "versioning_enabled": params['versioning_enabled']
+                "versioning_enabled": params['versioning_enabled'],
+                "labels": params['labels']
             }
             return True, '', result
         else:
@@ -202,6 +214,7 @@ def getBucket(params):
         result['storage_class'] = bucket.storage_class
         result['versioning_enabled'] = bucket.versioning_enabled
         result['location'] = bucket.location
+        result['labels'] = bucket.labels
     except NotFound:
         result['state'] = 'absent'
     return result
@@ -217,6 +230,7 @@ def createBucket(params, result):
         bucket = storage_client.bucket(params['name'])
         bucket.storage_class = params['storage_class']
         bucket.versioning_enabled = params['versioning_enabled']
+        bucket.labels = params['labels']
         bucket.create(location=params['location'])
         result['state'] = 'present'
         result['storage_class'] = bucket.storage_class
@@ -241,9 +255,13 @@ def updateBucket(params, result):
     if bucket.versioning_enabled != params['versioning_enabled']:
         bucket.versioning_enabled = params['versioning_enabled']
         bucket.patch()
+    if bucket.labels != params['labels']:
+        bucket.labels = params['labels']
+        bucket.update()
 
     result['storage_class'] = bucket.storage_class
     result['versioning_enabled'] = bucket.versioning_enabled
+    result['labels'] = bucket.labels
     return True, '', result
 
 
@@ -300,6 +318,11 @@ def run_module():
             "required": False,
             "type": 'bool',
             "default": False
+        },
+        "labels": {
+            "required": False,
+            "type": 'dict',
+            "default": {}
         },
         "force": {
             "required": False,
