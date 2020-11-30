@@ -8,5 +8,8 @@
         storage_class: "STANDARD"
         location: "us-central1"
         versioning_enabled: true
+        labels:
+          first: "label"
+          second: "label2"
         state: absent
       register: test
